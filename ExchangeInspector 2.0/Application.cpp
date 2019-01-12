@@ -54,6 +54,53 @@ bool Application::isFileExist(const wchar_t * _fileName)
 	return result;
 }
 
+const char * Application::unpackZip(const wstring & _fileName)
+{
+	FILE * zipFile = NULL;
+
+	map<string *, const char *> files;
+
+	if (_wfopen_s(&zipFile, _fileName.c_str(), L"rb") != 0)
+		throw Exception(L"Не удалось открыть файл");
+
+	ZLocalHeader localHeader = { 0 };
+	char * name = NULL;
+	char * data = NULL;
+	bool found = false;
+
+	string fname("Message_001_670.xml");
+
+	fread(&localHeader, sizeof(localHeader), 1, zipFile);
+
+	while (localHeader.header == ZHEADER)
+	{
+		name = new char[localHeader.fileNameLength + 1];
+		data = new char[localHeader.compSize];
+
+		memset(name, '\0', localHeader.fileNameLength + 1);
+		memset(data, 0, localHeader.compSize);
+
+		fread(name, localHeader.fileNameLength, 1, zipFile);
+		fread(data, localHeader.compSize, 1, zipFile);
+
+		if (fname == name)
+		{
+			found = true;
+			break;
+		}
+		
+		delete name;
+		delete data;
+
+		fread(&localHeader, sizeof(localHeader), 1, zipFile);
+	}
+
+	if (!found)
+		throw Exception(L"В архиве не найден файл Message_001_670.xml");
+	else
+		return data;
+}
+
 Application & Application::getInstance()
 {
 	static Application app;
@@ -83,41 +130,47 @@ void Application::setFile(const wchar_t * _fileName)
 		return;
 
 	if (!isFileExist(_fileName))
-	{
 		throw Exception(getSystemErrorMessage());
-	}
 
 	fileName = _fileName;
-	haveFile = true;
+	// TODO: uncomment this line after parser implemetation
+	//haveFile = true;
 
-	HANDLE hFile = CreateFile(fileName.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	FILE * inputFile = NULL;
 
-	if (hFile == INVALID_HANDLE_VALUE)
+	errno_t result = _wfopen_s(&inputFile, fileName.c_str(), L"rb");
+
+	if ((result != 0) || (inputFile == NULL))
+		throw Exception(L"Не удаётся открыть файл");
+
+	char buf[3] = { 0 };
+
+	if (fread(buf, 1, 2, inputFile) != 2)
 	{
-		throw Exception(getSystemErrorMessage());
+		fclose(inputFile);
+		throw Exception(L"Не удалось прочитать начало файла");
 	}
 
-	char buf[3];
-	unsigned long bytesRead = 0;
+	fclose(inputFile);
 
-	if (!ReadFile(hFile, buf, sizeof(char) * 2, &bytesRead, NULL))
-	{
-		if (bytesRead != (sizeof(wchar_t)) * 2)
-		{
-			CloseHandle(hFile);
-			throw Exception(getSystemErrorMessage());
-		}
-	}
-
+	const char t[3] = { (char)0xEF, (char)0xBB, (char)0 };
+	string xml = t;
 	string zip = "PK";
-	string xml = "<?";
-	buf[2] = 0;
+
+	ZLocalHeader localHeader = { 0 };
 
 	if (zip == buf)
 	{
-		// TODO: unzip the file to temp folder
-
-		fileName = L"%TEMP%\\message.xml";
+		// TODO: unpack message from archive and then run the parser
+		char * data = NULL;
+		try
+		{
+			data = (char *)unpackZip(fileName);
+		}
+		catch (Exception e)
+		{
+			error(e.what());
+		}
 	}
 	else if (xml == buf)
 	{
@@ -125,6 +178,7 @@ void Application::setFile(const wchar_t * _fileName)
 	}
 	else
 	{
+		_fcloseall();
 		throw Exception(L"Неизвестный формат файла");
 	}
 }

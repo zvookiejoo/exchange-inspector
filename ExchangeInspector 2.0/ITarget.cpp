@@ -70,6 +70,8 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 	HRESULT r = pDataObject->EnumFormatEtc(DATADIR_GET, &pFormatEnum);
 
+	bool fileFound = false;
+
 	if (r == S_OK)
 	{
 		FORMATETC format;
@@ -77,7 +79,7 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 		while ((pFormatEnum->Next(1, &format, NULL)) == S_OK)
 		{
-			if (format.cfFormat == CF_HDROP)
+			if ((format.cfFormat == CF_HDROP) && (!fileFound))
 			{
 				Application & app = Application::getInstance();
 
@@ -111,12 +113,15 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 				DragQueryFile(hDrop, 0, name, nameLength);
 
+				fileFound = true;
+
 				try
 				{
 					app.setFile(name);
 				}
 				catch (Exception e)
 				{
+					fileFound = false;
 					app.clearData();
 					app.error(e.what());
 				}

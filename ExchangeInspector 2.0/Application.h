@@ -4,6 +4,8 @@
 #include <map>
 #include "Window.h"
 #include "Exception.h"
+#include "zlib\zlib.h"
+#include "zip.h"
 
 using namespace std;
 
@@ -23,6 +25,7 @@ class Application
 
 	const wchar_t * getSystemErrorMessage();
 	bool isFileExist(const wchar_t * _fileName);
+	const char * unpackZip(const wstring & _fileName);
 public:
 	static Application & getInstance();
 
