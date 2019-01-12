@@ -93,7 +93,7 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 				if (DragQueryFile(hDrop, -1, NULL, 0) != 1)
 				{
-					app.error(L"Приложение принимает по одному");
+					app.error(L"Приложение принимает по одному файлу");
 					return E_ABORT;
 				}
 
@@ -109,15 +109,15 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 				wchar_t * name = new wchar_t[nameLength];
 
-				DragQueryFile(hDrop, 0, name, nameLength - 1);
+				DragQueryFile(hDrop, 0, name, nameLength);
 
 				try
 				{
-					if (!app.isDataPresent())
-						app.setFile(name);
+					app.setFile(name);
 				}
 				catch (Exception e)
 				{
+					app.clearData();
 					app.error(e.what());
 				}
 			}

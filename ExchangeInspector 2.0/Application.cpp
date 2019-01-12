@@ -79,10 +79,53 @@ void Application::setFile(const wchar_t * _fileName)
 	if (_fileName == nullptr)
 		throw Exception(L"Application::setFile() получила нулевой указатель");
 
-	if (isFileExist(_fileName))
+	if (parseInProgress || haveFile)
+		return;
+
+	if (!isFileExist(_fileName))
 	{
-		fileName = _fileName;
-		haveFile = true;
+		throw Exception(getSystemErrorMessage());
+	}
+
+	fileName = _fileName;
+	haveFile = true;
+
+	HANDLE hFile = CreateFile(fileName.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		throw Exception(getSystemErrorMessage());
+	}
+
+	char buf[3];
+	unsigned long bytesRead = 0;
+
+	if (!ReadFile(hFile, buf, sizeof(char) * 2, &bytesRead, NULL))
+	{
+		if (bytesRead != (sizeof(wchar_t)) * 2)
+		{
+			CloseHandle(hFile);
+			throw Exception(getSystemErrorMessage());
+		}
+	}
+
+	string zip = "PK";
+	string xml = "<?";
+	buf[2] = 0;
+
+	if (zip == buf)
+	{
+		// TODO: unzip the file to temp folder
+
+		fileName = L"%TEMP%\\message.xml";
+	}
+	else if (xml == buf)
+	{
+		// TODO: run the parser
+	}
+	else
+	{
+		throw Exception(L"Неизвестный формат файла");
 	}
 }
 
@@ -100,4 +143,11 @@ void Application::fatalError(wstring const & message)
 bool Application::isDataPresent()
 {
 	return haveFile;
+}
+
+void Application::clearData()
+{
+	objectList.clear();
+	fileName = L"";
+	haveFile = false;
 }
