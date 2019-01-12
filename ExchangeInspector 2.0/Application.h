@@ -1,6 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <string>
+#include <map>
 #include "Window.h"
 #include "Exception.h"
 
@@ -12,6 +13,7 @@ class Application
 
 	wstring fileName = L"";
 	bool haveFile = false;
+	map<wstring, int> objectList;
 
 	Application();
 	~Application();

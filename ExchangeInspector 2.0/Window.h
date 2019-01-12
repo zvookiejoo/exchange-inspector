@@ -1,10 +1,12 @@
 #pragma once
 #include <Windows.h>
+#include <CommCtrl.h>
 #include "Exception.h"
 
 class Window
 {
-	HWND handle;
+	HWND handle, hList;
+	HINSTANCE hInstance;
 
 	Window();
 	~Window();
