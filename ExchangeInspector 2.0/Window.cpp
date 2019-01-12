@@ -83,6 +83,13 @@ Window::Window()
 
 	if (SendMessage(hList, LVM_INSERTCOLUMN, lvc.iSubItem, (LPARAM)&lvc) == -1)
 		throw Exception(L"Не удалось создать колонку \"Количество\"");
+
+	OleInitialize(NULL);
+
+	pDropTarget = new ITarget();
+
+	if (RegisterDragDrop(handle, pDropTarget) != S_OK)
+		throw Exception(L"Не удалось зарегистрировать приёмник Drag&Drop");
 }
 
 
@@ -110,4 +117,9 @@ LRESULT CALLBACK Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	}
 
 	return 0;
+}
+
+HWND Window::getHandle()
+{
+	return handle;
 }
