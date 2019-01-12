@@ -9,7 +9,7 @@ using namespace std;
 
 class Application
 {
-	const Window & window = Window::getInstance();
+	Window & window = Window::getInstance();
 
 	wstring fileName = L"";
 	bool haveFile = false;
@@ -21,9 +21,14 @@ class Application
 	Application & operator=(Application const &) = delete;
 
 	const wchar_t * getSystemErrorMessage();
+	bool isFileExist(const wchar_t * _fileName);
 public:
 	static Application & getInstance();
 
 	int run();
+	void setFile(const wchar_t * _fileName);
+	void error(wstring const & message);
+	void fatalError(wstring const & message);
+	bool isDataPresent();
 };
 
