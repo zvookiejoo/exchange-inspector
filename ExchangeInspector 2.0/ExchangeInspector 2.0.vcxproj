@@ -132,6 +132,9 @@
     <ClInclude Include="Exception.h" />
     <ClInclude Include="ITarget.h" />
     <ClInclude Include="Window.h" />
+    <ClInclude Include="zip.h" />
+    <ClInclude Include="zlib\zconf.h" />
+    <ClInclude Include="zlib\zlib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
