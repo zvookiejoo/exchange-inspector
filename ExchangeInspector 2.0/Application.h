@@ -13,6 +13,7 @@ class Application
 
 	wstring fileName = L"";
 	bool haveFile = false;
+	bool parseInProgress = false;
 	map<wstring, int> objectList;
 
 	Application();
@@ -30,5 +31,6 @@ public:
 	void error(wstring const & message);
 	void fatalError(wstring const & message);
 	bool isDataPresent();
+	void clearData();
 };
 
