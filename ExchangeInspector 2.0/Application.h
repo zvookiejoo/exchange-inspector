@@ -14,6 +14,8 @@ class Application
 	Window & window = Window::getInstance();
 
 	wstring fileName = L"";
+	const wstring tempFileName = L"message.xml";
+
 	bool haveFile = false;
 	bool parseInProgress = false;
 	map<wstring, int> objectList;
@@ -25,12 +27,13 @@ class Application
 
 	const wchar_t * getSystemErrorMessage();
 	bool isFileExist(const wchar_t * _fileName);
-	const char * unpackZip(const wstring & _fileName);
+	FILE * findMessage(const wstring & _fileName);
+	void unpackMessage(FILE * message);
 public:
 	static Application & getInstance();
 
 	int run();
-	void setFile(const wchar_t * _fileName);
+	void processFile(const wchar_t * _fileName);
 	void error(wstring const & message);
 	void fatalError(wstring const & message);
 	bool isDataPresent();

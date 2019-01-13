@@ -14,8 +14,14 @@ Application::Application()
 	{
 		if (isFileExist(argv[1]))
 		{
-			fileName = argv[1];
-			haveFile = true;
+			try
+			{
+				processFile(argv[1]);
+			}
+			catch (Exception e)
+			{
+				error(e.what());
+			}
 		}
 	}
 }
@@ -54,18 +60,15 @@ bool Application::isFileExist(const wchar_t * _fileName)
 	return result;
 }
 
-const char * Application::unpackZip(const wstring & _fileName)
+FILE * Application::findMessage(const wstring & _fileName)
 {
 	FILE * zipFile = NULL;
-
-	map<string *, const char *> files;
 
 	if (_wfopen_s(&zipFile, _fileName.c_str(), L"rb") != 0)
 		throw Exception(L"Не удалось открыть файл");
 
 	ZLocalHeader localHeader = { 0 };
 	char * name = NULL;
-	char * data = NULL;
 	bool found = false;
 
 	string fname("Message_001_670.xml");
@@ -75,14 +78,16 @@ const char * Application::unpackZip(const wstring & _fileName)
 	while (localHeader.header == ZHEADER)
 	{
 		name = new char[localHeader.fileNameLength + 1];
-		data = new char[localHeader.compSize];
 
 		memset(name, '\0', localHeader.fileNameLength + 1);
-		memset(data, 0, localHeader.compSize);
 
 		fread(name, localHeader.fileNameLength, 1, zipFile);
-		fread(data, localHeader.compSize, 1, zipFile);
 
+		if (localHeader.extraFieldLength > 0)
+		{
+			fseek(zipFile, localHeader.extraFieldLength, SEEK_CUR);
+		}
+		
 		if (fname == name)
 		{
 			found = true;
@@ -90,15 +95,95 @@ const char * Application::unpackZip(const wstring & _fileName)
 		}
 		
 		delete name;
-		delete data;
 
+		fseek(zipFile, localHeader.compSize, SEEK_CUR);
 		fread(&localHeader, sizeof(localHeader), 1, zipFile);
 	}
 
-	if (!found)
-		throw Exception(L"В архиве не найден файл Message_001_670.xml");
+	if (found)
+	{
+		long offset = (localHeader.extraFieldLength + localHeader.fileNameLength + sizeof(localHeader)) * (-1);
+
+		return zipFile;
+	}
 	else
-		return data;
+	{
+		fclose(zipFile);
+		return NULL;
+	}
+}
+
+void Application::unpackMessage(FILE * message)
+{
+	FILE * in = findMessage(fileName);
+
+	if (in == NULL)
+		throw Exception(L"В архиве не найден файл Message_001_670.xml");
+
+	FILE * out = NULL;
+	_wfopen_s(&out, tempFileName.c_str(), L"wb");
+
+	if (out == NULL)
+	{
+		_fcloseall();
+		throw Exception(L"Не удалось открыть временный файл");
+	}
+
+	uint8_t src[CHUNK_SIZE] = { 0 }, dst[CHUNK_SIZE] = { 0 };
+
+	z_stream s = { 0 };
+
+	int result = inflateInit2(&s, -MAX_WBITS);
+
+	if (result != Z_OK)
+	{
+		_fcloseall();
+		inflateEnd(&s);
+		throw Exception(L"Ошибка инициализации распаковщика");
+	}
+
+	do {
+		s.avail_in = fread(src, 1, CHUNK_SIZE, in);
+
+		if (ferror(in))
+		{
+			_fcloseall();
+			inflateEnd(&s);
+			throw Exception(L"Ошибка чтения входного файла");
+		}
+
+		if (s.avail_in == 0)
+			break;
+
+		s.next_in = src;
+
+		do {
+			s.avail_out = CHUNK_SIZE;
+			s.next_out = dst;
+
+			result = inflate(&s, Z_NO_FLUSH);
+
+			if (result == Z_NEED_DICT || result == Z_DATA_ERROR || result == Z_MEM_ERROR)
+			{
+				_fcloseall();
+				inflateEnd(&s);
+				string t(s.msg);
+				wstring text(t.begin(), t.end());
+				throw Exception(text.c_str());
+			}
+
+			uint32_t have = CHUNK_SIZE - s.avail_out;
+
+			if (fwrite(dst, 1, have, out) != have || ferror(out))
+			{
+				_fcloseall();
+				inflateEnd(&s);
+				throw Exception(L"Ошибка записи выходного файла");
+			}
+		} while (s.avail_out == 0);
+	} while (result != Z_STREAM_END);
+
+	_fcloseall();
 }
 
 Application & Application::getInstance()
@@ -118,13 +203,16 @@ int Application::run()
 		DispatchMessage(&msg);
 	}
 
+	if (isFileExist(tempFileName.c_str()))
+		DeleteFile(tempFileName.c_str());
+
 	return 0;
 }
 
-void Application::setFile(const wchar_t * _fileName)
+void Application::processFile(const wchar_t * _fileName)
 {
 	if (_fileName == nullptr)
-		throw Exception(L"Application::setFile() получила нулевой указатель");
+		throw Exception(L"Application::processFile() получила нулевой указатель");
 
 	if (parseInProgress || haveFile)
 		return;
@@ -133,8 +221,7 @@ void Application::setFile(const wchar_t * _fileName)
 		throw Exception(getSystemErrorMessage());
 
 	fileName = _fileName;
-	// TODO: uncomment this line after parser implemetation
-	//haveFile = true;
+	haveFile = true;
 
 	FILE * inputFile = NULL;
 
@@ -161,16 +248,8 @@ void Application::setFile(const wchar_t * _fileName)
 
 	if (zip == buf)
 	{
-		// TODO: unpack message from archive and then run the parser
-		char * data = NULL;
-		try
-		{
-			data = (char *)unpackZip(fileName);
-		}
-		catch (Exception e)
-		{
-			error(e.what());
-		}
+		FILE * file = findMessage(fileName);
+		unpackMessage(file);
 	}
 	else if (xml == buf)
 	{
