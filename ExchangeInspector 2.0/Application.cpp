@@ -95,6 +95,7 @@ FILE * Application::findMessage(const wstring & _fileName)
 
 void Application::unpackMessage(FILE * message)
 {
+	window->setState(DECOMPRESSING);
 	FILE * in = findMessage(fileName);
 
 	if (in == NULL)
@@ -175,7 +176,17 @@ Application & Application::getInstance()
 
 int Application::run()
 {
+	try
+	{
+		this->parser = new Parser();
+	}
+	catch (Exception e)
+	{
+		fatalError(e.what());
+	}
+
 	this->window = &(Window::getInstance());
+
 	window->create();
 
 	int argc = 0;
@@ -218,14 +229,13 @@ void Application::processFile(const wchar_t * _fileName)
 	if (_fileName == nullptr)
 		throw Exception(L"Application::processFile() получила нулевой указатель");
 
-	if (parseInProgress || haveFile)
+	if (parseInProgress)
 		return;
 
 	if (!isFileExist(_fileName))
 		throw Exception(getSystemErrorMessage());
 
 	fileName = _fileName;
-	haveFile = true;
 
 	FILE * inputFile = NULL;
 
@@ -253,11 +263,19 @@ void Application::processFile(const wchar_t * _fileName)
 	if (zip == buf)
 	{
 		FILE * file = findMessage(fileName);
+
+		clearData();
+
 		unpackMessage(file);
+
+		parser->run(tempFileName);
+
+		window->setData(objectList);
 	}
 	else if (xml == buf)
 	{
-		// TODO: run the parser
+		clearData();
+		parser->run(fileName);
 	}
 	else
 	{
@@ -266,9 +284,14 @@ void Application::processFile(const wchar_t * _fileName)
 	}
 }
 
+void Application::warning(wstring const & message)
+{
+	MessageBox(window->getHandle(), message.c_str(), window->getTitle().c_str(), MB_ICONEXCLAMATION | MB_OK);
+}
+
 void Application::error(wstring const & message)
 {
-	MessageBox(window->getHandle(), message.c_str(), L"Exchange Inspector v2.0", MB_ICONERROR | MB_OK);
+	MessageBox(window->getHandle(), message.c_str(), window->getTitle().c_str(), MB_ICONERROR | MB_OK);
 }
 
 void Application::fatalError(wstring const & message)
@@ -277,14 +300,35 @@ void Application::fatalError(wstring const & message)
 	exit(-1);
 }
 
-bool Application::isDataPresent()
-{
-	return haveFile;
-}
-
 void Application::clearData()
 {
 	objectList.clear();
-	fileName = L"";
-	haveFile = false;
+	window->setData(objectList);
+	window->setState(MISSING_DATA);
+}
+
+map<wstring, int>* Application::getList()
+{
+	return &objectList;
+}
+
+void Application::setParsing(bool state)
+{
+	parseInProgress = state;
+
+	if (parseInProgress)
+	{
+		window->setState(PARSING);
+	}
+}
+
+void Application::refreshList()
+{
+	window->updateList(objectList);
+}
+
+void Application::parsingDone()
+{
+	parseInProgress = false;
+	window->setData(objectList);
 }

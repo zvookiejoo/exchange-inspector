@@ -16,11 +16,13 @@ typedef struct _ListViewInit
 class ListView
 {
 	HWND handle;
+	int x, y, width, height;
 public:
 	ListView(const PListViewInit init);
 	~ListView();
 
 	void clear();
 	void update(map<wstring, int> const & data);
+	void resize(const RECT * rect);
 };
 

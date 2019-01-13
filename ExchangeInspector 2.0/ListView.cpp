@@ -15,12 +15,17 @@ ListView::ListView(const PListViewInit init)
 
 	InitCommonControlsEx(&icex);
 
+	x = init->x;
+	y = init->y;
+	width = init->width;
+	height = init->height;
+
 	handle = CreateWindowEx(
 		WS_EX_CLIENTEDGE,
 		WC_LISTVIEW,
 		NULL,
 		WS_CHILD | WS_VISIBLE | LVS_REPORT,
-		init->x, init->y, init->width, init->height,
+		x, y, width, height,
 		init->hParentWnd, NULL, init->hInstance, NULL);
 
 	if (handle == NULL)
@@ -76,10 +81,21 @@ void ListView::update(map<wstring, int> const & data)
 		SendMessage(handle, LVM_INSERTITEM, 0, (LPARAM)&item);
 
 		item.iSubItem = 1;
-		item.pszText = (wchar_t *)to_wstring(it->second).c_str();
+		wstring val = to_wstring(it->second);
+		item.pszText = (wchar_t *)val.c_str();
 
 		SendMessage(handle, LVM_SETITEMTEXT, index, (LPARAM)&item);
 
 		index += 1;
 	}
+}
+
+void ListView::resize(const RECT * rect)
+{
+	x = rect->left;
+	y = rect->top;
+	width = rect->right - rect->left;
+	height = rect->bottom - rect->top;
+
+	MoveWindow(handle, x, y, width, height, TRUE);
 }
