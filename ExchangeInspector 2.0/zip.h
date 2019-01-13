@@ -20,3 +20,7 @@ typedef struct _ZLocalHeader
 #ifndef ZHEADER
 #define ZHEADER 0x04034B50
 #endif
+
+#ifndef CHUNK_SIZE
+#define CHUNK_SIZE 4096
+#endif

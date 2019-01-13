@@ -117,7 +117,7 @@ HRESULT __stdcall ITarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, PO
 
 				try
 				{
-					app.setFile(name);
+					app.processFile(name);
 				}
 				catch (Exception e)
 				{
