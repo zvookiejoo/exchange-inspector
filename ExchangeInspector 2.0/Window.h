@@ -11,11 +11,13 @@ using namespace std;
 typedef enum _WindowState {
 	MISSING_DATA,
 	DECOMPRESSING,
+	PARSING,
 	HAVE_DATA
 } WindowState;
 
 class Window
 {
+	const wstring title = L"Exchange Inspector v2.0";
 	HWND handle = NULL;
 	HINSTANCE hInstance;
 	ITarget * pDropTarget;
@@ -27,6 +29,7 @@ class Window
 	~Window();
 	Window(Window const &) = delete;
 	Window & operator=(Window const &) = delete;
+	void setTitle(wstring const & title);
 public:
 	static Window & getInstance();
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -34,5 +37,6 @@ public:
 	HWND getHandle();
 	void setState(WindowState state);
 	void setData(map<wstring, int> const & data);
+	const wstring & getTitle();
+	void updateList(map<wstring, int> const & data);
 };
-

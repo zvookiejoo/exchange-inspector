@@ -28,7 +28,7 @@ void Window::create()
 	handle = CreateWindowEx(
 		WS_EX_CLIENTEDGE,
 		className,
-		L"Exchange Inspector 2.0",
+		title.c_str(),
 		WS_VISIBLE | WS_SYSMENU | WS_SIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		400, 500,
@@ -59,6 +59,8 @@ void Window::create()
 
 	if (RegisterDragDrop(handle, pDropTarget) != S_OK)
 		throw Exception(L"Не удалось зарегистрировать приёмник Drag&Drop");
+
+	setState(MISSING_DATA);
 }
 
 
@@ -70,6 +72,11 @@ Window::~Window()
 {
 }
 
+void Window::setTitle(wstring const & title)
+{
+	SetWindowText(handle, title.c_str());
+}
+
 Window & Window::getInstance()
 {
 	static Window window;
@@ -79,10 +86,20 @@ Window & Window::getInstance()
 
 LRESULT CALLBACK Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	Window * window = (Window*)GetWindowLong(hWnd, GWL_USERDATA);
+
 	switch (uMsg)
 	{
 	case WM_DESTROY:
 		PostQuitMessage(0);
+		break;
+	case WM_SIZE:
+		RECT rect;
+		GetClientRect(hWnd, &rect);
+		if (window != NULL)
+		{
+			window->list->resize(&rect);
+		}
 		break;
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -99,12 +116,18 @@ HWND Window::getHandle()
 
 void Window::setState(WindowState state)
 {
-	switch (this->state) {
+	switch (state) {
 	case (MISSING_DATA):
 		this->state = state;
+		setTitle(title + L" - Нет данных");
 		break;
 	case (DECOMPRESSING):
 		this->state = state;
+		setTitle(title + L" - Распаковка");
+		break;
+	case (PARSING):
+		this->state = state;
+		setTitle(title + L" - Чтение данных");
 		break;
 	}
 }
@@ -114,4 +137,20 @@ void Window::setData(map<wstring, int> const & data)
 	this->data = data;
 
 	list->update(data);
+
+	state = HAVE_DATA;
+
+	setTitle(title + L" - Прочитано");
+}
+
+const wstring & Window::getTitle()
+{
+	return this->title;
+}
+
+void Window::updateList(map<wstring, int> const & data)
+{
+	this->data = data;
+
+	list->update(this->data);
 }

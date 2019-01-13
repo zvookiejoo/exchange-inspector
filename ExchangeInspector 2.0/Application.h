@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <string>
 #include <map>
+#include "Parser.h"
 #include "Window.h"
 #include "Exception.h"
 #include "zlib\zlib.h"
@@ -16,9 +17,10 @@ class Application
 	wstring fileName = L"";
 	const wstring tempFileName = L"message.xml";
 
-	bool haveFile = false;
 	bool parseInProgress = false;
 	map<wstring, int> objectList;
+
+	Parser * parser = NULL;
 
 	Application();
 	~Application();
@@ -34,9 +36,14 @@ public:
 
 	int run();
 	void processFile(const wchar_t * _fileName);
+	void warning(wstring const & message);
 	void error(wstring const & message);
 	void fatalError(wstring const & message);
 	bool isDataPresent();
 	void clearData();
+	map<wstring, int> * getList();
+	void setParsing(bool state);
+	void refreshList();
+	void parsingDone();
 };
 
