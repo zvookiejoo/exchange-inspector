@@ -11,7 +11,7 @@ using namespace std;
 
 class Application
 {
-	Window & window = Window::getInstance();
+	Window * window = NULL;
 
 	wstring fileName = L"";
 	const wstring tempFileName = L"message.xml";

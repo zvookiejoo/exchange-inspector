@@ -4,26 +4,6 @@
 
 Application::Application()
 {
-	int argc = 0;
-
-	TCHAR * lpCmdLine = GetCommandLine();
-
-	TCHAR ** argv = CommandLineToArgvW(lpCmdLine, &argc);
-
-	if (argc == 2)
-	{
-		if (isFileExist(argv[1]))
-		{
-			try
-			{
-				processFile(argv[1]);
-			}
-			catch (Exception e)
-			{
-				error(e.what());
-			}
-		}
-	}
 }
 
 Application::~Application()
@@ -195,6 +175,30 @@ Application & Application::getInstance()
 
 int Application::run()
 {
+	this->window = &(Window::getInstance());
+	window->create();
+
+	int argc = 0;
+
+	TCHAR * lpCmdLine = GetCommandLine();
+
+	TCHAR ** argv = CommandLineToArgvW(lpCmdLine, &argc);
+
+	if (argc == 2)
+	{
+		if (isFileExist(argv[1]))
+		{
+			try
+			{
+				processFile(argv[1]);
+			}
+			catch (Exception e)
+			{
+				error(e.what());
+			}
+		}
+	}
+
 	MSG msg;
 
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -264,7 +268,7 @@ void Application::processFile(const wchar_t * _fileName)
 
 void Application::error(wstring const & message)
 {
-	MessageBox(window.getHandle(), message.c_str(), L"Exchange Inspector v2.0", MB_ICONERROR | MB_OK);
+	MessageBox(window->getHandle(), message.c_str(), L"Exchange Inspector v2.0", MB_ICONERROR | MB_OK);
 }
 
 void Application::fatalError(wstring const & message)
