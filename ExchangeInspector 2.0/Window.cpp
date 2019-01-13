@@ -2,7 +2,7 @@
 
 
 
-Window::Window()
+void Window::create()
 {
 	hInstance = GetModuleHandle(NULL);
 
@@ -39,50 +39,19 @@ Window::Window()
 
 	SetWindowLong(handle, GWL_USERDATA, (LONG)this);
 
-	INITCOMMONCONTROLSEX icex;
+	ListViewInit lvInit = { 0 };
+	RECT rect;
 
-	icex.dwICC |= ICC_LISTVIEW_CLASSES;
+	GetClientRect(handle, &rect);
 
-	InitCommonControlsEx(&icex);
+	lvInit.hParentWnd = handle;
+	lvInit.hInstance = hInstance;
+	lvInit.x = rect.left;
+	lvInit.y = rect.top;
+	lvInit.width = rect.right - rect.left;
+	lvInit.height = rect.bottom - rect.top;
 
-	RECT clientRect;
-
-	if (!GetClientRect(handle, &clientRect))
-		throw Exception(L"Не удалось получить размеры клиентской части окна");
-
-	hList = CreateWindowEx(
-		WS_EX_CLIENTEDGE,
-		WC_LISTVIEW,
-		NULL,
-		WS_CHILD | WS_VISIBLE | LVS_REPORT,
-		clientRect.left, clientRect.top,
-		clientRect.right - clientRect.left,
-		clientRect.bottom - clientRect.top,
-		handle, NULL, hInstance, NULL);
-
-	if (hList == NULL)
-		throw Exception(L"Не удалось создать окно списка объектов");
-
-	DWORD exStyle = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES;
-
-	SendMessage(hList, LVM_SETEXTENDEDLISTVIEWSTYLE, exStyle, exStyle);
-
-	LVCOLUMN lvc;
-
-	lvc.mask = LVCF_WIDTH | LVCF_TEXT;
-	lvc.iSubItem = 0;
-	lvc.pszText = (wchar_t*)L"Тип объекта";
-	lvc.cx = 250;
-
-	if (SendMessage(hList, LVM_INSERTCOLUMN, lvc.iSubItem, (LPARAM)&lvc) == -1)
-		throw Exception(L"Не удалось создать колонку \"Тип объекта\"");
-
-	lvc.iSubItem = 1;
-	lvc.pszText = (wchar_t*)L"Количество";
-	lvc.cx = 100;
-
-	if (SendMessage(hList, LVM_INSERTCOLUMN, lvc.iSubItem, (LPARAM)&lvc) == -1)
-		throw Exception(L"Не удалось создать колонку \"Количество\"");
+	list = new ListView(&lvInit);
 
 	OleInitialize(NULL);
 
@@ -92,6 +61,10 @@ Window::Window()
 		throw Exception(L"Не удалось зарегистрировать приёмник Drag&Drop");
 }
 
+
+Window::Window()
+{
+}
 
 Window::~Window()
 {
@@ -122,4 +95,23 @@ LRESULT CALLBACK Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 HWND Window::getHandle()
 {
 	return handle;
+}
+
+void Window::setState(WindowState state)
+{
+	switch (this->state) {
+	case (MISSING_DATA):
+		this->state = state;
+		break;
+	case (DECOMPRESSING):
+		this->state = state;
+		break;
+	}
+}
+
+void Window::setData(map<wstring, int> const & data)
+{
+	this->data = data;
+
+	list->update(data);
 }
