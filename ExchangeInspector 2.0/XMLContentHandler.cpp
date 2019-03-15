@@ -102,7 +102,7 @@ HRESULT __stdcall XMLContentHandler::startElement(const wchar_t * pwchNamespaceU
 		{
 			pair<wstring, int> p;
 			p.first = typeName;
-			p.second = 0;
+			p.second = 1;
 
 			docTypes->insert(p);
 			itemsGot++;
